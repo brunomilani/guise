@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "guise",
+  "owner": {
+    "name": "guise contributors"
+  },
+  "metadata": {
+    "description": "GitHub, Bitbucket & GitLab account resolver for multi-account, multi-developer repositories."
+  },
+  "plugins": [
+    {
+      "name": "guise",
+      "source": "./",
+      "description": "Pick and enforce the correct GitHub, Bitbucket or GitLab account per repository.",
+      "version": "0.6.0",
+      "keywords": ["github", "bitbucket", "gitlab", "gh", "git", "ssh", "multi-account", "auth"]
+    }
+  ]
+}

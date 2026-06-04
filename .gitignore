@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+
+# Build output is committed so the Claude Code plugin works without a build step.
+# Regenerate with `npm run build`. (Intentionally NOT ignored.)
+
+# Local, per-developer files — NEVER commit these
+.claude/settings.local.json
+.git/claude-github-account.json
+
+# OS / editor
+.DS_Store
+*.log

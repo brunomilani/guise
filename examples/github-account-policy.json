@@ -1,0 +1,11 @@
+{
+  "githubHost": "github.com",
+  "expectedOwner": "acme",
+  "allowedUsers": ["john-work", "dev1", "dev2"],
+  "requireGitEmailDomain": "domain.com",
+  "enforceBeforeGhCommands": true,
+  "enforceBeforePush": true,
+  "hostAliases": {
+    "github-acme": "github.com"
+  }
+}

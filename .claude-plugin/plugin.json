@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "guise",
+  "displayName": "Guise",
+  "description": "Pick and enforce the correct GitHub, Bitbucket or GitLab account per repository. For teams where each developer has multiple accounts on one machine.",
+  "version": "0.6.0",
+  "author": {
+    "name": "guise contributors"
+  },
+  "homepage": "https://github.com/brunomilani/guise",
+  "repository": "https://github.com/brunomilani/guise",
+  "license": "MIT",
+  "keywords": ["github", "bitbucket", "gitlab", "gh", "git", "ssh", "multi-account", "auth", "team"]
+}

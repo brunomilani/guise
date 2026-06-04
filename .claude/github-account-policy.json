@@ -1,0 +1,7 @@
+{
+  "githubHost": "github.com",
+  "expectedOwner": "brunomilani",
+  "allowedUsers": ["brunomilani"],
+  "enforceBeforeGhCommands": true,
+  "enforceBeforePush": true
+}

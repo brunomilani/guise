@@ -1,0 +1,51 @@
+{
+  "name": "guise",
+  "version": "0.6.0",
+  "description": "Pick and enforce the right GitHub, Bitbucket or GitLab account per repository — for teams where each developer has multiple accounts.",
+  "type": "module",
+  "bin": {
+    "guise": "dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "skills",
+    "hooks",
+    "scripts",
+    "examples",
+    ".claude-plugin",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json && chmod +x dist/cli.js",
+    "dev": "tsx src/cli.ts",
+    "test": "tsx --test tests/*.test.ts",
+    "prepare": "npm run build",
+    "validate-plugin": "claude plugin validate ."
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "keywords": [
+    "claude-code",
+    "claude-code-plugin",
+    "github",
+    "gh",
+    "git",
+    "multi-account",
+    "auth"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "guise contributors"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/brunomilani/guise"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  }
+}

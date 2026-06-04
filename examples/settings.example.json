@@ -1,0 +1,8 @@
+{
+  "_comment": "Drop this into .claude/settings.json (committable, no secrets) to show the active account in the Claude Code status line. Adjust the command path to where guise is installed, or use a global 'guise statusline' if installed via npm.",
+  "statusLine": {
+    "type": "command",
+    "command": "guise statusline",
+    "padding": 0
+  }
+}
