@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { existsSync } from "node:fs";
+import { basename } from "node:path";
 import { createInterface } from "node:readline";
 import { getRepoChoice, setRepoChoice, removeRepoChoice, resolveHostAliases, getProfile, listProfiles, setProfile, removeProfile, } from "./config.js";
 import { getRepoInfo, isGitRepo, setLocalIdentity, setLocalSshKey, sshCommandFor, } from "./git.js";
@@ -765,6 +766,9 @@ async function cmdHookPreBash() {
     return 2;
 }
 /** SessionStart hook: print a one-line status note (non-blocking). */
+// SessionStart hook. Always greets in a git repo so guise announces itself in
+// any repo — even a brand-new one with no remote yet — and never stays silent
+// the way it used to when nothing was configured.
 function cmdHookSession() {
     const cwd = process.cwd();
     if (!isGitRepo(cwd))
@@ -773,27 +777,49 @@ function cmdHookSession() {
     if (!repo)
         return 0;
     const provider = repoProvider(repo);
-    if (!isSupported(provider))
-        return 0; // GitLab/unknown; silent
-    const choice = getRepoChoice(repo.path);
-    if (!choice) {
-        if (repo.remote) {
-            process.stdout.write(`guise: no ${providerLabel(provider)} account chosen for ${repo.remote.owner}/${repo.remote.repo}. Run /guise:init\n`);
-        }
+    // Where this repo is, for the banner: owner/repo when a remote exists,
+    // otherwise the working-tree folder name.
+    const where = repo.remote
+        ? `${repo.remote.owner}/${repo.remote.repo}`
+        : basename(repo.path);
+    // Unmanaged remote (unknown host). Greet once so guise is visibly active,
+    // but make clear it won't manage this repo.
+    if (!isSupported(provider)) {
+        process.stdout.write(`guise: active — ${where} is on ${providerLabel(provider)}, which guise doesn't manage (GitHub, Bitbucket, GitLab only).\n`);
         return 0;
     }
+    const choice = getRepoChoice(repo.path);
+    // Not configured yet — the onboarding banner, including brand-new repos
+    // that have no remote at all.
+    if (!choice) {
+        const note = repo.remote
+            ? `no ${providerLabel(provider)} account chosen for ${where}`
+            : `new repo "${where}" — no remote yet`;
+        process.stdout.write(`guise: active — ${note}. Run /guise:init to set the account.\n`);
+        return 0;
+    }
+    // SSH-model providers (Bitbucket / GitLab over SSH).
     if (usesSshModel(provider)) {
         if (choice.sshKey && repo.gitSshCommand !== sshCommandFor(choice.sshKey)) {
-            process.stdout.write(`guise: this repo expects SSH key ${choice.sshKey} (${choice.githubUser}). Run /guise:use to pin it.\n`);
+            process.stdout.write(`guise: ${where} expects SSH key ${choice.sshKey} (${choice.githubUser}). Run /guise:use to pin it.\n`);
+        }
+        else {
+            process.stdout.write(`guise: active — ${choice.githubUser} pinned for ${where}.\n`);
         }
         return 0;
     }
-    if (!isGhInstalled())
+    // gh-model providers (GitHub).
+    if (!isGhInstalled()) {
+        process.stdout.write(`guise: active — ${choice.githubUser} chosen for ${where} (gh CLI not found).\n`);
         return 0;
+    }
     const accounts = listGhAccounts();
     const active = getActiveGhAccount(accounts, choice.host);
     if (!active || active.user !== choice.githubUser) {
-        process.stdout.write(`guise: this repo expects "${choice.githubUser}". Run /guise:use to activate it.\n`);
+        process.stdout.write(`guise: ${where} expects "${choice.githubUser}". Run /guise:use to activate it.\n`);
+    }
+    else {
+        process.stdout.write(`guise: active — ${choice.githubUser} ✓ for ${where}.\n`);
     }
     return 0;
 }
