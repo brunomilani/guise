@@ -66,7 +66,8 @@ npm link        # makes `guise` available globally
 /plugin install guise@guise
 ```
 
-This adds the `/guise:*` commands, the SessionStart / pre-Bash hooks, and
+This adds the `/guise` command (plus the `/guise:*` skills), the
+SessionStart / pre-Bash hooks, and
 makes the bundled CLI available to those hooks. (Installing the plugin and
 `npm link` are independent — do either or both.)
 
@@ -98,9 +99,11 @@ guise reset       # forget the choice for this repo
 | `reset`            | Removes the local mapping for this repo. |
 | `statusline`       | Prints `[github account: …]` for the Claude Code status line. |
 
-Slash-command equivalents inside Claude Code: `/guise:init`,
-`/guise:status`, `/guise:use`, `/guise:validate`,
-`/guise:choose`, `/guise:git-sync`, `/guise:reset`.
+Inside Claude Code, use the **`/guise`** command with any subcommand as an
+argument — e.g. `/guise status`, `/guise use`, `/guise validate`,
+`/guise choose` (no argument defaults to `status`). The individual skills are
+also available namespaced: `/guise:init`, `/guise:status`, `/guise:use`,
+`/guise:validate`, `/guise:choose`, `/guise:git-sync`, `/guise:reset`.
 
 ---
 
@@ -345,8 +348,8 @@ See [ARCHITECTURE](#architecture) below.
 - **CLI (`src/`)** does all the work via `git` and `gh` with `child_process`.
   Pure parsing/validation logic is isolated (`git.ts`, `gh.ts`, `validate.ts`)
   and unit-tested.
-- **Plugin (`.claude-plugin/`, `skills/`, `hooks/`)** exposes `/guise:*`
-  commands and two hooks:
+- **Plugin (`.claude-plugin/`, `commands/`, `skills/`, `hooks/`)** exposes the
+  `/guise` command, the `/guise:*` skills, and two hooks:
   - **SessionStart** → prints a one-line account note.
   - **PreToolUse(Bash)** → before a `gh` command or `git push`, switches to the
     configured account, or blocks (exit 2) with guidance if it can't.
