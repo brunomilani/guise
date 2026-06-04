@@ -1,6 +1,6 @@
 ---
-description: Pick and enforce the correct GitHub/Bitbucket/GitLab account for this repository. Dispatches to the guise CLI (status, use, validate, choose, init, set, git-sync, reset).
-argument-hint: "[status|use|validate|choose|init|set|git-sync|reset] [flags]"
+description: Pick and enforce the correct GitHub/Bitbucket/GitLab account for this repository. Dispatches to the guise CLI (status, use, validate, choose, init, set, git-sync, install-hook, uninstall-hook, reset).
+argument-hint: "[status|use|validate|choose|init|set|git-sync|install-hook|uninstall-hook|reset] [flags]"
 ---
 
 # /guise

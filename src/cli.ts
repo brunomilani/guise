@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { existsSync } from "node:fs";
 import { basename } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createInterface } from "node:readline";
 import {
   getRepoChoice,
@@ -14,10 +15,12 @@ import {
 } from "./config.js";
 import {
   getRepoInfo,
+  installPrePushHook,
   isGitRepo,
   setLocalIdentity,
   setLocalSshKey,
   sshCommandFor,
+  uninstallPrePushHook,
 } from "./git.js";
 import {
   isGhInstalled,
@@ -691,6 +694,36 @@ function cmdStatus(): number {
   return result.ok ? 0 : 1;
 }
 
+/**
+ * Install a native git pre-push hook so the repo's account is enforced in every
+ * terminal — not just inside a Claude session. The PreToolUse hook only sees
+ * commands Claude runs; a developer pushing from their own shell needs this.
+ */
+function cmdInstallHook(): number {
+  const { repo } = loadContext();
+  const cliPath = fileURLToPath(import.meta.url);
+  const res = installPrePushHook(repo.path, process.execPath, cliPath);
+  if (res.status === "foreign") {
+    out(yellow(`A non-guise pre-push hook already exists:\n  ${res.path}`));
+    out(dim("Leaving it untouched. Merge the guise check in manually, or remove that file first."));
+    return 1;
+  }
+  out(green(res.status === "updated" ? "Updated guise pre-push hook." : "Installed guise pre-push hook."));
+  out(`  ${res.path}`);
+  out(dim("Every push from any terminal now runs: guise use && guise validate (aborts on mismatch)."));
+  return 0;
+}
+
+/** Remove the git pre-push hook (only when guise owns it). */
+function cmdUninstallHook(): number {
+  const { repo } = loadContext();
+  const res = uninstallPrePushHook(repo.path);
+  if (res === "removed") out(green("Removed guise pre-push hook."));
+  else if (res === "absent") out(dim("No guise pre-push hook to remove."));
+  else out(yellow("The existing pre-push hook is not guise-managed; left untouched."));
+  return res === "foreign" ? 1 : 0;
+}
+
 function cmdReset(): number {
   const { repo } = loadContext();
   const removed = removeRepoChoice(repo.path);
@@ -927,6 +960,8 @@ Commands:
   use         Activate the configured account (GitHub: gh auth switch · Bitbucket/GitLab: pin SSH key)
   validate    Run all checks; non-zero exit on error
   git-sync    Apply git user.name/email + SSH key from the saved choice (--yes to skip prompt)
+  install-hook    Install a git pre-push hook that enforces the account in every terminal
+  uninstall-hook  Remove the guise pre-push hook
   reset       Remove the local choice for this repo
   statusline  Print '[github account: ...]' for Claude Code statusLine
   --version   Print version
@@ -966,6 +1001,12 @@ async function main(): Promise<void> {
       break;
     case "reset":
       code = cmdReset();
+      break;
+    case "install-hook":
+      code = cmdInstallHook();
+      break;
+    case "uninstall-hook":
+      code = cmdUninstallHook();
       break;
     case "statusline":
       code = await cmdStatusline();

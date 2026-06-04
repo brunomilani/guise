@@ -25,3 +25,20 @@ export declare function isGitRepo(cwd: string): boolean;
 export declare function getRepoInfo(cwd: string, hostAliases?: Record<string, string>): RepoInfo | null;
 /** Set repo-local git identity. Never touches global config. */
 export declare function setLocalIdentity(root: string, name: string | null, email: string | null): void;
+/** Resolve the directory git uses for this repo's hooks (honors core.hooksPath). */
+export declare function hooksDir(root: string): string;
+export type HookInstallResult = {
+    status: "installed" | "updated";
+    path: string;
+} | {
+    status: "foreign";
+    path: string;
+};
+/**
+ * Write the pre-push hook. Returns "foreign" without touching anything when a
+ * non-guise hook already exists, so we never clobber a developer's own hook.
+ */
+export declare function installPrePushHook(root: string, nodeExec: string, cliPath: string): HookInstallResult;
+export type HookRemoveResult = "removed" | "absent" | "foreign";
+/** Remove the pre-push hook only when we own it. */
+export declare function uninstallPrePushHook(root: string): HookRemoveResult;

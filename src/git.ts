@@ -1,4 +1,6 @@
 import { execFileSync } from "node:child_process";
+import { chmodSync, existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
+import { isAbsolute, join } from "node:path";
 import type { Provider, RemoteInfo, RepoInfo } from "./types.js";
 
 /** Map a (resolved) host to a provider. */
@@ -141,4 +143,94 @@ export function setLocalIdentity(
 ): void {
   if (name) execFileSync("git", ["config", "--local", "user.name", name], { cwd: root });
   if (email) execFileSync("git", ["config", "--local", "user.email", email], { cwd: root });
+}
+
+// --- git pre-push hook (terminal-agnostic enforcement) -------------------
+//
+// The Claude Code PreToolUse hook only covers commands run inside a Claude
+// session. A developer pushing from their own shell — after a `gh auth switch`
+// in another terminal — bypasses guise entirely. A native git `pre-push` hook
+// closes that gap: git runs it in EVERY terminal, right before the transfer,
+// so we can re-activate the repo's account (gh switch / SSH pin) and abort the
+// push when the environment can't be made correct.
+
+/** Marker that identifies a pre-push hook we wrote (vs. a user's own). */
+const HOOK_MARKER = "# guise-managed pre-push hook";
+
+/**
+ * Build the pre-push hook body. A global `guise` on PATH wins; otherwise we
+ * fall back to the absolute CLI path captured at install time, so the hook
+ * works in a plain developer shell even when guise isn't installed globally.
+ * With neither available it stays silent and succeeds — never blocks a push by
+ * accident.
+ */
+function prePushHook(nodeExec: string, cliPath: string): string {
+  return `#!/usr/bin/env bash
+${HOOK_MARKER} — installed by: guise install-hook · remove with: guise uninstall-hook
+# Forces this repo's configured account before every push, from any terminal.
+set -euo pipefail
+if command -v guise >/dev/null 2>&1; then
+  GUISE=(guise)
+elif [ -x "${nodeExec}" ] && [ -f "${cliPath}" ]; then
+  GUISE=("${nodeExec}" "${cliPath}")
+else
+  exit 0
+fi
+if ! "\${GUISE[@]}" use 1>&2; then
+  echo "guise: could not activate this repo's account — push aborted." >&2
+  exit 1
+fi
+if ! "\${GUISE[@]}" validate 1>&2; then
+  echo "guise: validation failed — push aborted. Fix: guise use && guise git-sync" >&2
+  exit 1
+fi
+exit 0
+`;
+}
+
+/** Resolve the directory git uses for this repo's hooks (honors core.hooksPath). */
+export function hooksDir(root: string): string {
+  const p = git(["rev-parse", "--git-path", "hooks"], root);
+  if (!p) return join(root, ".git", "hooks");
+  return isAbsolute(p) ? p : join(root, p);
+}
+
+export type HookInstallResult =
+  | { status: "installed" | "updated"; path: string }
+  | { status: "foreign"; path: string };
+
+/**
+ * Write the pre-push hook. Returns "foreign" without touching anything when a
+ * non-guise hook already exists, so we never clobber a developer's own hook.
+ */
+export function installPrePushHook(
+  root: string,
+  nodeExec: string,
+  cliPath: string,
+): HookInstallResult {
+  const dir = hooksDir(root);
+  const path = join(dir, "pre-push");
+  const body = prePushHook(nodeExec, cliPath);
+  if (existsSync(path)) {
+    const current = readFileSync(path, "utf8");
+    if (!current.includes(HOOK_MARKER)) return { status: "foreign", path };
+    writeFileSync(path, body);
+    chmodSync(path, 0o755);
+    return { status: "updated", path };
+  }
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(path, body);
+  chmodSync(path, 0o755);
+  return { status: "installed", path };
+}
+
+export type HookRemoveResult = "removed" | "absent" | "foreign";
+
+/** Remove the pre-push hook only when we own it. */
+export function uninstallPrePushHook(root: string): HookRemoveResult {
+  const path = join(hooksDir(root), "pre-push");
+  if (!existsSync(path)) return "absent";
+  if (!readFileSync(path, "utf8").includes(HOOK_MARKER)) return "foreign";
+  unlinkSync(path);
+  return "removed";
 }

@@ -23,6 +23,9 @@ user. Do not proceed with the GitHub operation until it passes.
 - Never push automatically — ask first.
 - If the local git `user.email` does not match the chosen account, suggest
   `guise git-sync` (which asks before changing anything).
+- The `guise use`/`guise validate` step above only covers commands run in this
+  session. To enforce the account on pushes from any terminal, suggest the
+  one-time `guise install-hook` (adds a native git `pre-push` hook).
 
 The committed policy lives in `.claude/github-account-policy.json`. The local,
 per-developer choice is stored outside the repo in

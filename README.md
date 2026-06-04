@@ -82,6 +82,7 @@ guise status      # full report
 guise use         # activate the chosen account via `gh auth switch`
 guise validate    # exit non-zero if anything is wrong
 guise git-sync    # apply user.name / user.email locally (asks first)
+guise install-hook # enforce the account on every push, from any terminal
 guise reset       # forget the choice for this repo
 ```
 
@@ -96,6 +97,8 @@ guise reset       # forget the choice for this repo
 | `use`              | Activate the configured account. GitHub: `gh auth switch`. Bitbucket/GitLab: pin the repo-local SSH key. |
 | `validate`         | Runs every check. Non-zero exit on error (CI-friendly). |
 | `git-sync`         | Sets `git config --local user.name/email` from the saved choice (after confirmation). |
+| `install-hook`     | Installs a native git `pre-push` hook that runs `use` + `validate` before **every** push — so the account is enforced in any terminal, not only inside a Claude session. Never clobbers an existing non-guise hook. |
+| `uninstall-hook`   | Removes the guise `pre-push` hook (only when guise owns it). |
 | `reset`            | Removes the local mapping for this repo. |
 | `statusline`       | Prints `[github account: …]` for the Claude Code status line. |
 
@@ -103,7 +106,8 @@ Inside Claude Code, use the **`/guise`** command with any subcommand as an
 argument — e.g. `/guise status`, `/guise use`, `/guise validate`,
 `/guise choose` (no argument defaults to `status`). The individual skills are
 also available namespaced: `/guise:init`, `/guise:status`, `/guise:use`,
-`/guise:validate`, `/guise:choose`, `/guise:git-sync`, `/guise:reset`.
+`/guise:validate`, `/guise:choose`, `/guise:git-sync`, `/guise:install-hook`,
+`/guise:reset`.
 
 ---
 
@@ -353,6 +357,12 @@ See [ARCHITECTURE](#architecture) below.
   - **SessionStart** → prints a one-line account note.
   - **PreToolUse(Bash)** → before a `gh` command or `git push`, switches to the
     configured account, or blocks (exit 2) with guidance if it can't.
+
+  The PreToolUse hook only covers commands run **inside a Claude session**. For
+  enforcement in **any** terminal (e.g. after a `gh auth switch` in another
+  shell), run `guise install-hook` once per repo — it adds a native git
+  `pre-push` hook that runs `use` + `validate` before every push and aborts on
+  mismatch.
 - **Local choice** lives in `~/.config/guise/` — chosen over
   `.claude/settings.local.json` and `.git/…` because it is *outside the repo*
   (cannot be committed) and serves every repo from one file.
